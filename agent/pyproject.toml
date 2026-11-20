@@ -1,0 +1,6 @@
+[project]
+name = "llm-agent-harness"
+version = "0.1.0"
+description = "Minimal tool-using agent around a local llama.cpp server, instrumented with Antithesis assertions"
+requires-python = ">=3.11"
+dependencies = ["antithesis==0.4.1"]

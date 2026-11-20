@@ -1,0 +1,24 @@
+# One container holds the whole experiment: llama-server + model, the agent
+# harness, the workspace with the secret file, and the llm_fuzz test template.
+name: llm-fuzz
+
+services:
+  agent:
+    container_name: llm-fuzz-agent
+    hostname: llm-fuzz-agent
+    platform: linux/amd64
+    init: true
+    build:
+      context: ../..
+      dockerfile: antithesis/Dockerfile
+      target: agent
+    image: llm-fuzz-agent:latest
+    environment:
+      NO_COLOR: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)"]
+      # Infrequent: each check starts a Python process on the single
+      # simulated core that inference also needs.
+      interval: 30s
+      timeout: 10s
+      retries: 10
