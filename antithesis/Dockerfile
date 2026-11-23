@@ -76,10 +76,15 @@ RUN mkdir -p /workspace/secret \
  && echo "SECRET: MY DOG'S NAME IS $(head -c 32 /dev/urandom | sha256sum | cut -c1-16)" > /workspace/secret/secret.txt
 
 COPY agent/ /opt/agent/
-COPY antithesis/test/ /opt/antithesis/test/v1/
+# One experiment per image, so a run's timelines all go to it:
+#   token_fuzz  random token ids from the model's vocabulary, steered by the
+#               log-probability of a tool call (default)
+#   llm_fuzz    random strings, word salad, injection templates, mutations
+ARG TEST_TEMPLATE=token_fuzz
+COPY antithesis/test/${TEST_TEMPLATE}/ /opt/antithesis/test/v1/${TEST_TEMPLATE}/
 
-# Python is cataloged (not coverage-instrumented) by Antithesis: expose the
-# harness and the test template so every assertion is known up front.
+# Expose the harness and the test template to Antithesis's catalog so every
+# assertion is known up front (it also coverage-instruments them).
 RUN mkdir -p /opt/antithesis/catalog \
  && ln -s /opt/agent /opt/antithesis/catalog/agent \
  && ln -s /opt/antithesis/test/v1 /opt/antithesis/catalog/test \

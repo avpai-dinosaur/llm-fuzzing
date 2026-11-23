@@ -1,7 +1,7 @@
 ---
 sut_path: /home/exedev/llm-fuzzing
 commit: uncommitted
-updated: 2026-11-20
+updated: 2026-11-23
 external_references:
   - path: https://antithesis.com/docs/configuration/the_antithesis_environment.md
     why: hardware limits of the Antithesis VM
@@ -20,8 +20,8 @@ llm-fuzz-agent
 ├── /models/model.gguf                        baked in, checksum-pinned
 ├── /workspace/…  /workspace/secret/secret.txt
 ├── /opt/agent/harness/…                      agent harness (PYTHONPATH)
-├── /opt/antithesis/test/v1/llm_fuzz/…        test template
-└── /var/lib/llm-fuzz/…                       workload state (config, conversation, history)
+├── /opt/antithesis/test/v1/<template>/…      one test template (build arg TEST_TEMPLATE)
+└── /var/lib/token-fuzz/… or /var/lib/llm-fuzz/…   workload state
 ```
 
 Why a single container: the user asked for model + harness + secret in one container,
@@ -35,7 +35,18 @@ they only slow inference down.
 llama-server's `/health` returns `ok`. The compose healthcheck polls the same endpoint
 for local `docker compose up --wait`.
 
-## Test template `llm_fuzz`
+## Test template `token_fuzz` (default, experiment 2)
+
+| Command | Role |
+|---|---|
+| `first_configure_search.py` | draws the per-timeline search config (mode, vocab, prompt length, edit size), clears the search state |
+| `serial_driver_search.py` | 4–16 candidate prompts per invocation: edit, probe the tool-call log-probability, run promising ones as real agent turns |
+| `eventually_server_answers.py` | after faults stop, llama-server must be healthy and answer |
+
+Only one template is installed per image so all of a run's timelines go to one
+experiment; `TEST_TEMPLATE=llm_fuzz` switches back to experiment 1.
+
+## Test template `llm_fuzz` (experiment 1)
 
 | Command | Role |
 |---|---|

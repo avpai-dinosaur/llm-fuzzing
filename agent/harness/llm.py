@@ -96,3 +96,27 @@ class LlamaClient:
         if tools:
             payload["tools"] = tools
         return self._request("POST", "/v1/chat/completions", payload)
+
+    # Lower-level endpoints, for the log-probability probes.
+
+    def model_meta(self) -> dict:
+        return self._request("GET", "/v1/models")["data"][0]["meta"]
+
+    def tokenize(self, text: str) -> list[int]:
+        # parse_special: "<tool_call>" in the text becomes the control token,
+        # as it does when a chat request is templated.
+        return self._request("POST", "/tokenize", {"content": text, "parse_special": True})["tokens"]
+
+    def detokenize(self, ids: list[int]) -> str:
+        return self._request("POST", "/detokenize", {"tokens": ids})["content"]
+
+    def apply_template(self, messages: list, tools: list) -> str:
+        """The prompt text a chat request with these messages would produce."""
+        payload = {"messages": messages, **self.extra}
+        if tools:
+            payload["tools"] = tools
+        return self._request("POST", "/apply-template", payload)["prompt"]
+
+    def complete(self, prompt: list[int], **params) -> dict:
+        """Raw completion from token ids, no chat template or tool parsing."""
+        return self._request("POST", "/completion", {"prompt": prompt, "cache_prompt": True, **params})
